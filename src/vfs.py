@@ -150,3 +150,52 @@ class VirtualFS:
             return f"Каталог не найден: {target}"
         self.cwd = target
         return None
+
+    # ---------- Изменение VFS (только в памяти) ----------
+
+    def create_file(self, path):
+        """Создаёт пустой файл в VFS. Возвращает None или ошибку.
+
+        Если файл уже существует — ничего не делает.
+        Родительская папка должна существовать.
+        """
+        target = self.absolute(path)
+        parent = posixpath.dirname(target)
+
+        if not self.is_dir(parent):
+            return f"Каталог не найден: {parent}"
+
+        if self.is_dir(target):
+            return f"Уже существует каталог с именем: {target}"
+
+        self.files[target] = b""
+        return None
+
+    def copy_file(self, source, destination):
+        """Копирует файл внутри VFS. Возвращает None или ошибку.
+
+        - источник должен быть файлом;
+        - если назначение — папка, файл копируется внутрь неё
+          с тем же именем;
+        - если назначение — не папка, оно считается новым именем файла.
+        """
+        src = self.absolute(source)
+        dst = self.absolute(destination)
+
+        if not self.is_file(src):
+            return f"Файл не найден: {src}"
+
+        # Если dst — папка, кладём файл внутрь с тем же именем
+        if self.is_dir(dst):
+            dst = posixpath.join(dst, posixpath.basename(src))
+
+        parent = posixpath.dirname(dst)
+        if not self.is_dir(parent):
+            return f"Каталог не найден: {parent}"
+
+        self.files[dst] = self.files[src]
+        return None
+
+    def load_from_zip(self, zip_path):
+        """Загружает VFS из ZIP-файла (синоним init_from_zip)."""
+        return self.init_from_zip(zip_path)

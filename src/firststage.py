@@ -127,6 +127,57 @@ def cmd_rev(args):
         reversed_lines.append(line[::-1])
     return "\n".join(reversed_lines) + "\n"
 
+def cmd_cp(args):
+    """Копирует файл внутри VFS."""
+    if len(args) < 2:
+        return "Ошибка: cp требует источник и назначение\n"
+    if len(args) > 2:
+        return (
+            f"Ошибка: cp принимает два аргумента, "
+            f"получено {len(args)}\n"
+        )
+
+    error = vfs.copy_file(args[0], args[1])
+    if error:
+        return error + "\n"
+    return f"Скопировано: {args[0]} -> {args[1]}\n"
+
+
+def cmd_touch(args):
+    """Создаёт пустой файл в VFS."""
+    if not args:
+        return "Ошибка: touch требует имя файла\n"
+    if len(args) > 1:
+        return (
+            f"Ошибка: touch принимает один аргумент, "
+            f"получено {len(args)}\n"
+        )
+
+    error = vfs.create_file(args[0])
+    if error:
+        return error + "\n"
+    return f"Создан файл: {args[0]}\n"
+
+
+def cmd_vfs_load(args):
+    """Загружает VFS из указанного ZIP-файла."""
+    if not args:
+        return "Ошибка: vfs-load требует путь к ZIP-архиву\n"
+    if len(args) > 1:
+        return (
+            f"Ошибка: vfs-load принимает один аргумент, "
+            f"получено {len(args)}\n"
+        )
+
+    new_vfs = VirtualFS()
+    error = new_vfs.load_from_zip(args[0])
+    if error:
+        return error + "\n"
+
+    global vfs
+    vfs = new_vfs
+    return f"VFS загружена из: {args[0]}\n"
+
 def cmd_vfs_init(args):
     """Заменяет текущую VFS на VFS из указанного ZIP-архива.
 
@@ -194,7 +245,10 @@ def execute(line):
         "cat": cmd_cat,
         "pwd": cmd_pwd,
         "rev": cmd_rev,
+        "cp": cmd_cp,
+        "touch": cmd_touch,
         "vfs-init": cmd_vfs_init,
+        "vfs-load": cmd_vfs_load,
         "exit": cmd_exit,
     }
 

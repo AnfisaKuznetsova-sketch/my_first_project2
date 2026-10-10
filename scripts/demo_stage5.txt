@@ -1,0 +1,59 @@
+# ==================================================
+# Стартовый скрипт для этапа 5.
+# Тестирование команд: cp, touch, vfs-load.
+# Запуск:
+#   python src/firststage.py --vfs vfs/vfs_large.zip \
+#       --script scripts/demo_stage5.txt
+# ==================================================
+
+# ----- 1. Исходное состояние -----
+pwd
+ls
+cd /home/user
+ls
+
+# ----- 2. Копирование файла (cp) -----
+cp readme.txt readme_copy.txt
+ls
+cat readme_copy.txt
+
+# ----- 3. Копирование с перезаписью -----
+cp readme.txt readme_copy.txt
+ls
+
+# ----- 4. Создание пустого файла (touch) -----
+touch newfile.txt
+ls
+cat newfile.txt
+
+# ----- 5. Загрузка другой VFS (vfs-load) -----
+vfs-load vfs/vfs_small.zip
+pwd
+ls
+cat hello.txt
+
+# ----- 6. Обработка ошибок -----
+
+# 6.1. cp без аргументов
+cp
+
+# 6.2. cp с одним аргументом
+cp readme.txt
+
+# 6.3. cp несуществующего файла
+cp не_существует.txt куда_то.txt
+
+# 6.4. touch без аргументов
+touch
+
+# 6.5. touch с лишними аргументами
+touch a b c
+
+# 6.6. vfs-load без аргументов
+vfs-load
+
+# 6.7. vfs-load несуществующего архива
+vfs-load нет_такого.zip
+
+# ----- 7. Завершение -----
+exit
