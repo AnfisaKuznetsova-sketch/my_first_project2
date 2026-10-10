@@ -1,0 +1,14 @@
+# Тест средней VFS (vfs_medium.zip)
+
+pwd
+ls
+cd docs
+ls
+cat readme.md
+cat install.txt
+cd ..
+cd src
+ls
+cat main.c
+cat utils.h
+pwd

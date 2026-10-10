@@ -1,0 +1,27 @@
+# Тест большой VFS (vfs_large.zip) — 4 уровня вложенности
+
+pwd
+ls
+cd home
+ls
+cd user
+ls
+cat readme.txt
+cd notes
+ls
+cat day1.md
+cat day2.md
+cd archive
+ls
+cat old.txt
+pwd
+cd /
+ls
+cd etc
+ls
+cat config.ini
+cat hosts
+cd /
+cd var/log
+ls
+cat system.log

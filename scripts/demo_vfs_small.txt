@@ -1,0 +1,9 @@
+# Тест маленькой VFS (vfs_small.zip)
+
+pwd
+ls
+cd /
+ls
+cat hello.txt
+cat не_существует.txt
+cd несуществующая_папка
