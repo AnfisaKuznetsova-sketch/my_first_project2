@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Прототип эмулятора оболочки.
+"""Прототип эмулятора оболочки с виртуальной файловой системой.
 
 Параметры командной строки:
-    --vfs PATH      путь к физическому расположению VFS
+    --vfs PATH      путь к ZIP-архиву с VFS
     --script PATH   путь к стартовому скрипту с командами
 """
 
@@ -13,7 +13,10 @@ import sys
 import tkinter as tk
 from tkinter import scrolledtext
 
+from vfs import VirtualFS
+
 running = True
+vfs = VirtualFS()
 
 
 def split_args(line):
@@ -44,34 +47,89 @@ def split_args(line):
 
 
 def cmd_ls(args):
-    """Заглушка команды ls: печатает имя и аргументы."""
-    out = "ls\n"
-    if not args:
-        out += "Аргументов нет\n"
-    else:
-        out += "Аргументы:\n"
-        for i, a in enumerate(args, 1):
-            out += f"  [{i}] '{a}'\n"
+    """Показывает содержимое каталога VFS."""
+    path = args[0] if args else vfs.cwd
+    target = vfs.absolute(path)
+
+    if not vfs.is_dir(target):
+        return f"Каталог не найден: {target}\n"
+
+    files, dirs = vfs.list_dir(target)
+
+    out = f"Содержимое {target}:\n"
+    for d in dirs:
+        out += f"  [dir]  {d}\n"
+    for f in files:
+        out += f"  [file] {f}\n"
+    if not files and not dirs:
+        out += "  (пусто)\n"
     return out
 
 
 def cmd_cd(args):
-    """Заглушка команды cd: печатает имя и аргументы.
-
-    Возвращает кортеж (текст, была_ли_ошибка).
-    """
-    out = "cd\n"
+    """Меняет текущий каталог VFS."""
     if not args:
-        out += "Аргументов нет\n"
-        return out, False
+        return f"Текущий каталог: {vfs.cwd}\n"
+
     if len(args) > 1:
-        out += (
+        return (
             f"Ошибка: cd принимает один аргумент, "
             f"получено {len(args)}\n"
         )
-        return out, True
-    out += f"Аргументы:\n  [1] '{args[0]}'\n"
-    return out, False
+
+    error = vfs.change_dir(args[0])
+    if error:
+        return error + "\n"
+    return f"Текущий каталог: {vfs.cwd}\n"
+
+
+def cmd_cat(args):
+    """Показывает содержимое файла из VFS."""
+    if not args:
+        return "Ошибка: cat требует имя файла\n"
+    if len(args) > 1:
+        return (
+            f"Ошибка: cat принимает один аргумент, "
+            f"получено {len(args)}\n"
+        )
+
+    target = vfs.absolute(args[0])
+    text, error = vfs.read_file(target)
+    if error:
+        return error + "\n"
+    return text + "\n"
+
+
+def cmd_pwd(args):
+    """Показывает текущий каталог."""
+    return vfs.cwd + "\n"
+
+
+def cmd_vfs_init(args):
+    """Заменяет текущую VFS на VFS из указанного ZIP-архива.
+
+    Без аргументов возвращает VFS в пустое состояние
+    (это и есть «VFS по умолчанию»).
+    """
+    global vfs
+
+    if not args:
+        vfs = VirtualFS()
+        return "VFS сброшена в состояние по умолчанию.\n"
+
+    if len(args) > 1:
+        return (
+            f"Ошибка: vfs-init принимает один аргумент, "
+            f"получено {len(args)}\n"
+        )
+
+    new_vfs = VirtualFS()
+    error = new_vfs.init_from_zip(args[0])
+    if error:
+        return error + "\n"
+
+    vfs = new_vfs
+    return f"VFS загружена из: {args[0]}\n"
 
 
 def cmd_exit(args):
@@ -99,7 +157,13 @@ def execute(line):
     if cmd == "ls":
         return cmd_ls(rest), False
     if cmd == "cd":
-        return cmd_cd(rest)
+        return cmd_cd(rest), False
+    if cmd == "cat":
+        return cmd_cat(rest), False
+    if cmd == "pwd":
+        return cmd_pwd(rest), False
+    if cmd == "vfs-init":
+        return cmd_vfs_init(rest), False
     if cmd == "exit":
         return cmd_exit(rest), False
 
@@ -116,7 +180,7 @@ def parse_cli(argv):
         "--vfs",
         metavar="PATH",
         default=None,
-        help="путь к физическому расположению VFS",
+        help="путь к ZIP-архиву с VFS",
     )
     parser.add_argument(
         "--script",
@@ -135,16 +199,25 @@ def print_debug_info(cli):
     print("===================================")
 
     if cli.vfs is not None:
-        if os.path.isdir(cli.vfs):
-            print(f"[ok] VFS существует: {cli.vfs}")
+        if os.path.isfile(cli.vfs):
+            print(f"[ok] VFS-архив существует: {cli.vfs}")
         else:
-            print(f"[!] VFS не найден: {cli.vfs}")
+            print(f"[!] VFS-архив не найден: {cli.vfs}")
 
     if cli.script is not None:
         if os.path.isfile(cli.script):
             print(f"[ok] Стартовый скрипт существует: {cli.script}")
         else:
             print(f"[!] Стартовый скрипт не найден: {cli.script}")
+
+
+def init_vfs_from_cli(cli):
+    """Инициализирует VFS из ZIP-архива, если он задан."""
+    if not cli.vfs:
+        return
+    error = vfs.init_from_zip(cli.vfs)
+    if error:
+        print(f"[!] {error}", file=sys.stderr)
 
 
 def run_script(path, out_callback):
@@ -178,6 +251,7 @@ def run_script(path, out_callback):
                 f"(строка {i}): {line}"
             )
     return None
+
 
 def make_show(box):
     """Создаёт функцию show для вывода текста в область вывода."""
@@ -216,7 +290,7 @@ def build_gui(cli):
     )
     host = socket.gethostname()
     root.title(f"Эмулятор - [{user}@{host}]")
-    root.geometry("720x460")
+    root.geometry("720x600")
 
     box = scrolledtext.ScrolledText(
         root,
@@ -234,7 +308,7 @@ def build_gui(cli):
     show = make_show(box)
     entry.bind("<Return>", make_on_enter(entry, show))
 
-    show("Эмулятор оболочки. Команды: ls, cd, exit\n")
+    show("Эмулятор оболочки. Команды: ls, cd, cat, pwd, vfs-init, exit\n")
     show(f"VFS:    {cli.vfs or '(не задан)'}\n")
     show(f"Script: {cli.script or '(не задан)'}\n\n")
 
@@ -258,15 +332,18 @@ def run_startup_script(cli, show, entry):
     if not running:
         entry.config(state="disabled")
 
+
 def main():
     """Точка входа: разбор аргументов, создание GUI, запуск скрипта."""
     cli = parse_cli(sys.argv[1:])
     print_debug_info(cli)
+    init_vfs_from_cli(cli)
 
     root, show, entry = build_gui(cli)
     run_startup_script(cli, show, entry)
 
     root.mainloop()
+
 
 if __name__ == "__main__":
     main()
