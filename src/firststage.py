@@ -104,6 +104,28 @@ def cmd_pwd(args):
     """Показывает текущий каталог."""
     return vfs.cwd + "\n"
 
+def cmd_rev(args):
+    """Переворачивает строки файла из VFS.
+
+    Для каждой строки символы идут в обратном порядке.
+    """
+    if not args:
+        return "Ошибка: rev требует имя файла\n"
+    if len(args) > 1:
+        return (
+            f"Ошибка: rev принимает один аргумент, "
+            f"получено {len(args)}\n"
+        )
+
+    target = vfs.absolute(args[0])
+    text, error = vfs.read_file(target)
+    if error:
+        return error + "\n"
+
+    reversed_lines = []
+    for line in text.splitlines():
+        reversed_lines.append(line[::-1])
+    return "\n".join(reversed_lines) + "\n"
 
 def cmd_vfs_init(args):
     """Заменяет текущую VFS на VFS из указанного ZIP-архива.
@@ -139,6 +161,18 @@ def cmd_exit(args):
     return "Завершение работы...\n"
 
 
+def _looks_like_error(text):
+    """Проверяет, содержит ли ответ команды текст ошибки."""
+    markers = (
+        "Ошибка",
+        "не найден",
+        "не найдена",
+        "не найдено",
+        "Команда не найдена",
+    )
+    return any(m in text for m in markers)
+
+
 def execute(line):
     """Выполняет одну строку.
 
@@ -154,20 +188,22 @@ def execute(line):
     cmd = args[0]
     rest = args[1:]
 
-    if cmd == "ls":
-        return cmd_ls(rest), False
-    if cmd == "cd":
-        return cmd_cd(rest), False
-    if cmd == "cat":
-        return cmd_cat(rest), False
-    if cmd == "pwd":
-        return cmd_pwd(rest), False
-    if cmd == "vfs-init":
-        return cmd_vfs_init(rest), False
-    if cmd == "exit":
-        return cmd_exit(rest), False
+    handlers = {
+        "ls": cmd_ls,
+        "cd": cmd_cd,
+        "cat": cmd_cat,
+        "pwd": cmd_pwd,
+        "rev": cmd_rev,
+        "vfs-init": cmd_vfs_init,
+        "exit": cmd_exit,
+    }
 
-    return f"Команда не найдена: {cmd}\n", True
+    handler = handlers.get(cmd)
+    if handler is None:
+        return f"Команда не найдена: {cmd}\n", True
+
+    answer = handler(rest)
+    return answer, _looks_like_error(answer)
 
 
 def parse_cli(argv):
