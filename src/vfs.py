@@ -79,6 +79,32 @@ class VirtualFS:
         """Проверяет, что путь — это файл."""
         return path in self.files
 
+    def _child_files(self, prefix):
+        """Возвращает имена файлов, лежащих непосредственно в prefix."""
+        result = []
+        for path in self.files:
+            if not path.startswith(prefix):
+                continue
+            tail = path[len(prefix):]
+            if "/" not in tail:
+                result.append(tail)
+        return result
+
+    def _child_dirs(self, prefix, parent):
+        """Возвращает имена подпапок, лежащих непосредственно в parent."""
+        result = []
+        for path in self.dirs:
+            if path == parent or path == "/":
+                continue
+            if path in self.files:
+                continue
+            if not path.startswith(prefix):
+                continue
+            tail = path[len(prefix):]
+            if "/" not in tail and tail:
+                result.append(tail)
+        return result
+
     def list_dir(self, path):
         """Возвращает содержимое папки: два списка (файлы, папки).
 
@@ -88,25 +114,8 @@ class VirtualFS:
             return None, None
 
         prefix = path.rstrip("/") + "/"
-        files = []
-        dirs = []
-
-        for f in self.files:
-            if f.startswith(prefix):
-                tail = f[len(prefix):]
-                if "/" not in tail:
-                    files.append(tail)
-
-        for d in self.dirs:
-            if d == path or d == "/":
-                continue
-            if d in self.files:
-                continue
-            if d.startswith(prefix):
-                tail = d[len(prefix):]
-                if "/" not in tail and tail:
-                    dirs.append(tail)
-
+        files = self._child_files(prefix)
+        dirs = self._child_dirs(prefix, path)
         return sorted(files), sorted(dirs)
 
     def read_file(self, path):
