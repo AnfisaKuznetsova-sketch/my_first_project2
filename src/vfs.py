@@ -18,12 +18,10 @@ class VirtualFS:
 
     def __init__(self):
         """Создаёт пустую VFS без источника."""
-        self.files = {}          # {путь: bytes}
-        self.dirs = {"/"}        # множество папок, всегда есть корень
-        self.cwd = "/"           # текущий каталог
-        self.source = None       # путь к ZIP-архиву-источнику
-
-    # ---------- Инициализация из ZIP ----------
+        self.files = {}
+        self.dirs = {"/"}
+        self.cwd = "/"
+        self.source = None
 
     def init_from_zip(self, zip_path):
         """Загружает VFS из ZIP-архива. Читает в память, не распаковывает.
@@ -69,8 +67,6 @@ class VirtualFS:
         with archive.open(info) as f:
             self.files[path] = f.read()
 
-    # ---------- Запросы ----------
-
     def exists(self, path):
         """Проверяет, что путь есть в VFS (файл или папка)."""
         return path in self.files or path in self.dirs
@@ -104,7 +100,7 @@ class VirtualFS:
         for d in self.dirs:
             if d == path or d == "/":
                 continue
-            if d in self.files:        # это файл, не папка
+            if d in self.files:
                 continue
             if d.startswith(prefix):
                 tail = d[len(prefix):]
@@ -122,8 +118,6 @@ class VirtualFS:
             return None, f"Файл не найден: {path}"
         data = self.files[path]
         return data.decode("utf-8", errors="replace"), None
-
-    # ---------- Работа с путями ----------
 
     @staticmethod
     def normalize(path):
