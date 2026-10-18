@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Прототип эмулятора оболочки с виртуальной файловой системой.
 
 Параметры командной строки:
@@ -17,7 +16,8 @@ from vfs import VirtualFS
 
 running = True
 vfs = VirtualFS()
-
+MAX_ARGS = 1
+MAX_ARGS_CP = 2
 
 def split_args(line):
     """Разбивает строку на слова с учётом одинарных и двойных кавычек.
@@ -71,7 +71,7 @@ def cmd_cd(args):
     if not args:
         return f"Текущий каталог: {vfs.cwd}\n"
 
-    if len(args) > 1:
+    if len(args) > MAX_ARGS:
         return (
             f"Ошибка: cd принимает один аргумент, "
             f"получено {len(args)}\n"
@@ -111,7 +111,7 @@ def cmd_rev(args):
     """
     if not args:
         return "Ошибка: rev требует имя файла\n"
-    if len(args) > 1:
+    if len(args) > MAX_ARGS:
         return (
             f"Ошибка: rev принимает один аргумент, "
             f"получено {len(args)}\n"
@@ -129,9 +129,9 @@ def cmd_rev(args):
 
 def cmd_cp(args):
     """Копирует файл внутри VFS."""
-    if len(args) < 2:
+    if len(args) < MAX_ARGS_CP:
         return "Ошибка: cp требует источник и назначение\n"
-    if len(args) > 2:
+    if len(args) > MAX_ARGS_CP:
         return (
             f"Ошибка: cp принимает два аргумента, "
             f"получено {len(args)}\n"
@@ -147,7 +147,7 @@ def cmd_touch(args):
     """Создаёт пустой файл в VFS."""
     if not args:
         return "Ошибка: touch требует имя файла\n"
-    if len(args) > 1:
+    if len(args) > MAX_ARGS:
         return (
             f"Ошибка: touch принимает один аргумент, "
             f"получено {len(args)}\n"
@@ -163,7 +163,7 @@ def cmd_vfs_load(args):
     """Загружает VFS из указанного ZIP-файла."""
     if not args:
         return "Ошибка: vfs-load требует путь к ZIP-архиву\n"
-    if len(args) > 1:
+    if len(args) > MAX_ARGS:
         return (
             f"Ошибка: vfs-load принимает один аргумент, "
             f"получено {len(args)}\n"
@@ -190,7 +190,7 @@ def cmd_vfs_init(args):
         vfs = VirtualFS()
         return "VFS сброшена в состояние по умолчанию.\n"
 
-    if len(args) > 1:
+    if len(args) > MAX_ARGS:
         return (
             f"Ошибка: vfs-init принимает один аргумент, "
             f"получено {len(args)}\n"
